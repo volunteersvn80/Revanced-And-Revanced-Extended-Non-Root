@@ -2,6 +2,11 @@ name: Build ReVanced APK
 
 on:
   workflow_dispatch:
+    inputs:
+      apk_url:
+        description: 'Direct URL to YouTube APK (để trống nếu dùng link mặc định)'
+        required: false
+        default: 'https://dw.uptodown.net/dwn/29Lxcs2gnl0KT5Y60nlhSjgssXXsml2u19cvB4zYDlkjpQLwqhyiKMy-BdmsP_-S23is-DbMqQmMnZEN3RLYBLJoT8DNdIbTpRJj9hXrTjpuaB6srTrfv5v7KjFXrvzG/nTpDWFqM-zPQ6t7g3Q2uqxzoXHybBVdv6YLnYW2GUFSKrtiNJ-4RYbgvVYyZXG4awaAMq-2DMoyXlsEMI3af3LUdhi1FVflUmDg_OXLFtfD7AZjBWVUT-wHaUyVQu53p/8wE5jpcXuPO-o0gMhHk0Vmajplhsa23rHE2ZY1d2uEBqjwpYR942IxXDh6U3Tqw8shAN5it4kO4Ue0pSISy26Q==/youtube-21-34-243.apk'
 
 jobs:
   build:
@@ -17,33 +22,31 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Install tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y jq curl
-
       - name: Download Tools & Patch
         run: |
           mkdir -p build && cd build
-          
-          # 1. Tải CLI, Patches, Integrations mới nhất
-          CLI_URL=$(curl -s https://api.github.com/repos/ReVanced/revanced-cli/releases/latest | jq -r '.assets[] | select(.name | endswith(".jar")) | .browser_download_url')
-          PATCHES_URL=$(curl -s https://api.github.com/repos/ReVanced/revanced-patches/releases/latest | jq -r '.assets[] | select(.name | endswith(".jar")) | .browser_download_url')
-          INTEGRATIONS_URL=$(curl -s https://api.github.com/repos/ReVanced/revanced-integrations/releases/latest | jq -r '.assets[] | select(.name | endswith(".apk")) | .browser_download_url')
+
+          # Tải CLI & Patches mới nhất
+          CLI_URL=$(curl -s https://api.github.com/repos/ReVanced/revanced-cli/releases/latest | grep "browser_download_url.*\.jar" | cut -d : -f 2,3 | tr -d \")
+          PATCHES_URL=$(curl -s https://api.github.com/repos/ReVanced/revanced-patches/releases/latest | grep "browser_download_url.*\(jar\|rvp\)" | head -n 1 | cut -d : -f 2,3 | tr -d \")
 
           curl -sL "$CLI_URL" -o revanced-cli.jar
           curl -sL "$PATCHES_URL" -o revanced-patches.jar
-          curl -sL "$INTEGRATIONS_URL" -o revanced-integrations.apk
 
-          # 2. Tải file APK YouTube tương thích từ nguồn APKMirror/Archive
-          # Lưu ý: Thay URL bên dưới bằng link trực tiếp tới file YouTube base APK tương ứng nếu bạn có link riêng
-          curl -sL "https://dw.uptodown.net/dwn/29Lxcs2gnl0KT5Y60nlhSjgssXXsml2u19cvB4zYDlkjpQLwqhyiKMy-BdmsP_-S23is-DbMqQmMnZEN3RLYBLJoT8DNdIbTpRJj9hXrTjpuaB6srTrfv5v7KjFXrvzG/nTpDWFqM-zPQ6t7g3Q2uqxzoXHybBVdv6YLnYW2GUFSKrtiNJ-4RYbgvVYyZXG4awaAMq-2DMoyXlsEMI3af3LUdhi1FVflUmDg_OXLFtfD7AZjBWVUT-wHaUyVQu53p/8wE5jpcXuPO-o0gMhHk0Vmajplhsa23rHE2ZY1d2uEBqjwpYR942IxXDh6U3Tqw8shAN5it4kO4Ue0pSISy26Q==/youtube-21-34-243.apk" -o base.apk
+          # Tải APK kèm User-Agent giả lập trình duyệt để tránh bị Uptodown chặn
+          APK_URL="${{ github.event.inputs.apk_url }}"
+          curl -sL -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" "$APK_URL" -o base.apk
 
-          # 3. Tiến hành Patch
+          # Kiểm tra file APK tải về
+          if [ ! -s base.apk ] || file base.apk | grep -q 'HTML'; then
+            echo "::error::Link APK bị lỗi, hết hạn hoặc bị chặn tải."
+            exit 1
+          fi
+
+          # Patch APK
           java -jar revanced-cli.jar patch \
-            -p revanced-patches.jar \
-            -m revanced-integrations.apk \
-            -o revanced-output.apk \
+            --patch-bundle revanced-patches.jar \
+            --out revanced-output.apk \
             base.apk
 
       - name: Upload APK Release
