@@ -1,0 +1,50 @@
+name: Build ReVanced APK
+
+on:
+  workflow_dispatch: # Cho phép bấm nút chạy thủ công
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Download Tools & APKs
+        run: |
+          mkdir -p build && cd build
+          
+          # Tải revanced-cli, patches và integrations mới nhất
+          CLI_URL=$(curl -s https://api.github.com/repos/ReVanced/revanced-cli/releases/latest | grep "browser_download_url.*\.jar" | cut -d : -f 2,3 | tr -d \")
+          PATCHES_URL=$(curl -s https://api.github.com/repos/ReVanced/revanced-patches/releases/latest | grep "browser_download_url.*\.jar" | cut -d : -f 2,3 | tr -d \")
+          INTEGRATIONS_URL=$(curl -s https://api.github.com/repos/ReVanced/revanced-integrations/releases/latest | grep "browser_download_url.*\.apk" | cut -d : -f 2,3 | tr -d \")
+          
+          curl -sL "$CLI_URL" -o revanced-cli.jar
+          curl -sL "$PATCHES_URL" -o revanced-patches.jar
+          curl -sL "$INTEGRATIONS_URL" -o revanced-integrations.apk
+
+          # Tải file APK gốc từ nguồn bạn muốn (ví dụ thay URL_APK_GOC bằng direct link APK hợp lệ)
+          # curl -sL "<URL_APK_GOC>" -o base.apk
+
+      - name: Patch APK
+        run: |
+          cd build
+          # Chạy lệnh patch (cần có base.apk)
+          java -jar revanced-cli.jar patch \
+            -p revanced-patches.jar \
+            -m revanced-integrations.apk \
+            -o revanced-output.apk \
+            base.apk
+
+      - name: Upload APK Release
+        uses: actions/upload-artifact@v4
+        with:
+          name: ReVanced-APK
+          path: build/revanced-output.apk
