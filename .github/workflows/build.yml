@@ -1,7 +1,7 @@
 name: Build ReVanced APK
 
 on:
-  workflow_dispatch: # Cho phép bấm nút chạy thủ công
+  workflow_dispatch:
 
 jobs:
   build:
@@ -17,26 +17,29 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Download Tools & APKs
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq curl
+
+      - name: Download Tools & Patch
         run: |
           mkdir -p build && cd build
           
-          # Tải revanced-cli, patches và integrations mới nhất
-          CLI_URL=$(curl -s https://api.github.com/repos/ReVanced/revanced-cli/releases/latest | grep "browser_download_url.*\.jar" | cut -d : -f 2,3 | tr -d \")
-          PATCHES_URL=$(curl -s https://api.github.com/repos/ReVanced/revanced-patches/releases/latest | grep "browser_download_url.*\.jar" | cut -d : -f 2,3 | tr -d \")
-          INTEGRATIONS_URL=$(curl -s https://api.github.com/repos/ReVanced/revanced-integrations/releases/latest | grep "browser_download_url.*\.apk" | cut -d : -f 2,3 | tr -d \")
-          
+          # 1. Tải CLI, Patches, Integrations mới nhất
+          CLI_URL=$(curl -s https://api.github.com/repos/ReVanced/revanced-cli/releases/latest | jq -r '.assets[] | select(.name | endswith(".jar")) | .browser_download_url')
+          PATCHES_URL=$(curl -s https://api.github.com/repos/ReVanced/revanced-patches/releases/latest | jq -r '.assets[] | select(.name | endswith(".jar")) | .browser_download_url')
+          INTEGRATIONS_URL=$(curl -s https://api.github.com/repos/ReVanced/revanced-integrations/releases/latest | jq -r '.assets[] | select(.name | endswith(".apk")) | .browser_download_url')
+
           curl -sL "$CLI_URL" -o revanced-cli.jar
           curl -sL "$PATCHES_URL" -o revanced-patches.jar
           curl -sL "$INTEGRATIONS_URL" -o revanced-integrations.apk
 
-          # Tải file APK gốc từ nguồn bạn muốn (ví dụ thay URL_APK_GOC bằng direct link APK hợp lệ)
-          # curl -sL "<URL_APK_GOC>" -o base.apk
+          # 2. Tải file APK YouTube tương thích từ nguồn APKMirror/Archive
+          # Lưu ý: Thay URL bên dưới bằng link trực tiếp tới file YouTube base APK tương ứng nếu bạn có link riêng
+          curl -sL "https://archive.org/download/youtube-revanced-base-apks/YouTube_19.16.39.apk" -o base.apk
 
-      - name: Patch APK
-        run: |
-          cd build
-          # Chạy lệnh patch (cần có base.apk)
+          # 3. Tiến hành Patch
           java -jar revanced-cli.jar patch \
             -p revanced-patches.jar \
             -m revanced-integrations.apk \
