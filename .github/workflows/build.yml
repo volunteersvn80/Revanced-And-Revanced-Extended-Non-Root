@@ -37,7 +37,7 @@ jobs:
 
           # 2. Tải file APK YouTube tương thích từ nguồn APKMirror/Archive
           # Lưu ý: Thay URL bên dưới bằng link trực tiếp tới file YouTube base APK tương ứng nếu bạn có link riêng
-          curl -sL "https://data.winudf.com/APK/Y29tLmdvb2dsZS5hbmRyb2lkLnlvdXR1YmVfMTU2MTI5Mjk2Ml8yN2MyNGRjYw?_p=Y29tLmdvb2dsZS5hbmRyb2lkLnlvdXR1YmU%3D&download_id=no_1190507092319381&filename=YouTube_21.34.243_APKPure.apk&full_size=203765282&is_hot=true&k=8613a5de2f0c572530d5d2bebe6e3f946a945f38&package_name=com.google.android.youtube&source=web&token=1787935800-e9e6040102-0-15fde03514f4f3ec478b3fad07c16c33" -o base.apk
+          curl -sL "https://dw.uptodown.net/dwn/29Lxcs2gnl0KT5Y60nlhSjgssXXsml2u19cvB4zYDlkjpQLwqhyiKMy-BdmsP_-S23is-DbMqQmMnZEN3RLYBLJoT8DNdIbTpRJj9hXrTjpuaB6srTrfv5v7KjFXrvzG/nTpDWFqM-zPQ6t7g3Q2uqxzoXHybBVdv6YLnYW2GUFSKrtiNJ-4RYbgvVYyZXG4awaAMq-2DMoyXlsEMI3af3LUdhi1FVflUmDg_OXLFtfD7AZjBWVUT-wHaUyVQu53p/8wE5jpcXuPO-o0gMhHk0Vmajplhsa23rHE2ZY1d2uEBqjwpYR942IxXDh6U3Tqw8shAN5it4kO4Ue0pSISy26Q==/youtube-21-34-243.apk" -o base.apk
 
           # 3. Tiến hành Patch
           java -jar revanced-cli.jar patch \
